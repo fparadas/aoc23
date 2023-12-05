@@ -21,6 +21,7 @@ fn main() -> io::Result<()> {
 
     match cli.day {
         1 => days::day_one::run(cli.part.unwrap_or(1))?,
+        2 => days::day_two::run(cli.part.unwrap_or(1))?,
         _ => println!("Day not implemented"),
     }
 
