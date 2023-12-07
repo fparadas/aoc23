@@ -187,9 +187,9 @@ fn get_gears(first: Option<&Line>, second: &Line, third: Option<&Line>) -> Vec<u
                 let numbers_near_symbol: Vec<(u32, Vec<usize>)> = numbers
                     .iter()
                     .filter(|el| {
-                        (*el).1.contains(&i)
-                            || (*el).1.contains(&(i - 1))
-                            || (*el).1.contains(&(i + 1))
+                        el.1.contains(&i)
+                            || el.1.contains(&(i - 1))
+                            || el.1.contains(&(i + 1))
                     })
                     .cloned()
                     .collect();
