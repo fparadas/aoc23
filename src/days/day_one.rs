@@ -24,11 +24,10 @@ pub fn run(part: u8) -> io::Result<()> {
         }
         2 => {
             for line in stdin.lock().lines() {
-                let numbers: Vec<u32> = parse(&line?).unwrap_or(vec![]);
+                let numbers: Vec<u32> = parse(&line?).unwrap_or_default();
                 total += match (numbers.first(), numbers.last()) {
                     (Some(first), Some(last)) => first * 10 + last,
                     _ => {
-                        0;
                         break;
                     }
                 }

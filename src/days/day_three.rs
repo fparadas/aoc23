@@ -1,3 +1,4 @@
+use core::num;
 use std::io::{self, BufRead};
 
 #[derive(Debug, PartialEq, Clone, Copy)]
@@ -177,46 +178,50 @@ fn process_marked_numbers(matrix: &Matrix) -> Vec<u32> {
     marked_numbers.iter().flatten().copied().collect()
 }
 
-// fn get_gears(first: Option<&Line>, second: &Line, third: Option<&Line>) -> Vec<u32> {
-//     let numbers = get_marked_numbers(first, second, third, Some('*'));
-//     let mut gears: Vec<u32> = Vec::new();
-//     for (i, el) in second.iter().enumerate() {
-//         match el {
-//             Token::Symbol(c) => {
-//                 if *c == '*' {
-//                     let (near_digit, columns) = is_near_digit(first, second, third, i);
-//                     if near_digit {
-//                         gears.push(get_numbers(first, second, third, i, &columns).iter().product())
-//                     }
-//                 }
-//             }
-//             _ => {}
-//         }
-//     }
+fn get_gears(first: Option<&Line>, second: &Line, third: Option<&Line>) -> Vec<u32> {
+    let numbers = get_marked_numbers(first, second, third, Some('*'));
+    let mut gears: Vec<u32> = Vec::new();
+    for (i, el) in second.iter().enumerate() {
+        match el {
+            Token::Symbol(c) => {
+                let numbers_near_symbol: Vec<(u32, Vec<usize>)> = numbers
+                    .iter()
+                    .filter(|el| {
+                        (*el).1.contains(&i)
+                            || (*el).1.contains(&(i - 1))
+                            || (*el).1.contains(&(i + 1))
+                    })
+                    .cloned()
+                    .collect();
+                if *c == '*' && numbers_near_symbol.len() > 1 {
+                    gears.push(numbers_near_symbol.iter().map(|el| el.0).product());
+                }
+            }
+            _ => {
+                continue
+            }
+        }
+    }
 
-//     gears
-// }
+    gears
+}
 
-// fn process_symbols(matrix: &Matrix) -> Vec<u32> {
-//     let mut gears: Vec<u32> = Vec::new();
+fn process_symbols(matrix: &Matrix) -> Vec<u32> {
+    let mut gears: Vec<u32> = Vec::new();
 
-//     for (i, _) in matrix.iter().enumerate() {
-//         let first = if i == 0 {
-//             None
-//         } else {
-//             Some(&matrix[i - 1])
-//         };
-//         let third = if i == matrix.len() - 1 {
-//             None
-//         } else {
-//             Some(&matrix[i + 1])
-//         };
+    for (i, _) in matrix.iter().enumerate() {
+        let first = if i == 0 { None } else { Some(&matrix[i - 1]) };
+        let third = if i == matrix.len() - 1 {
+            None
+        } else {
+            Some(&matrix[i + 1])
+        };
 
-//         gears.push(get_gears(first, &matrix[i], third));
-//     }
+        gears.append(get_gears(first, &matrix[i], third).as_mut());
+    }
 
-//     gears
-// }
+    gears
+}
 
 pub fn run(part: u8) -> io::Result<()> {
     let stdin = io::stdin();
@@ -235,10 +240,13 @@ pub fn run(part: u8) -> io::Result<()> {
         .collect();
 
     let marked_numbers = process_marked_numbers(&source);
-
+    let gears = process_symbols(&source);
     match part {
         1 => {
             println!("Part 1: {}", marked_numbers.iter().sum::<u32>());
+        }
+        2 => {
+            println!("Part 2: {}", gears.iter().sum::<u32>());
         }
         _ => {
             println!("Part not implemented")
