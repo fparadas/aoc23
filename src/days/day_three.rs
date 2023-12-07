@@ -1,4 +1,3 @@
-use core::num;
 use std::io::{self, BufRead};
 
 #[derive(Debug, PartialEq, Clone, Copy)]
@@ -178,18 +177,15 @@ fn process_marked_numbers(matrix: &Matrix) -> Vec<u32> {
     marked_numbers.iter().flatten().copied().collect()
 }
 
-fn get_gears(first: Option<&Line>, second: &Line, third: Option<&Line>) -> Vec<u32> {
-    let numbers = get_marked_numbers(first, second, third, Some('*'));
+fn get_gears(line: &Line, numbers: Vec<(u32, Vec<usize>)>) -> Vec<u32> {
     let mut gears: Vec<u32> = Vec::new();
-    for (i, el) in second.iter().enumerate() {
+    for (i, el) in line.iter().enumerate() {
         match el {
             Token::Symbol(c) => {
                 let numbers_near_symbol: Vec<(u32, Vec<usize>)> = numbers
                     .iter()
                     .filter(|el| {
-                        el.1.contains(&i)
-                            || el.1.contains(&(i - 1))
-                            || el.1.contains(&(i + 1))
+                        el.1.contains(&i) || el.1.contains(&(i - 1)) || el.1.contains(&(i + 1))
                     })
                     .cloned()
                     .collect();
@@ -197,9 +193,7 @@ fn get_gears(first: Option<&Line>, second: &Line, third: Option<&Line>) -> Vec<u
                     gears.push(numbers_near_symbol.iter().map(|el| el.0).product());
                 }
             }
-            _ => {
-                continue
-            }
+            _ => continue,
         }
     }
 
@@ -216,8 +210,24 @@ fn process_symbols(matrix: &Matrix) -> Vec<u32> {
         } else {
             Some(&matrix[i + 1])
         };
-
-        gears.append(get_gears(first, &matrix[i], third).as_mut());
+        let mut numbers = get_marked_numbers(first, &matrix[i], third, Some('*'));
+        if let Some(first_line) = first {
+            numbers.extend(get_marked_numbers(
+                None,
+                first_line,
+                Some(&matrix[i]),
+                Some('*'),
+            ))
+        }
+        if let Some(third_line) = third {
+            numbers.extend(get_marked_numbers(
+                Some(&matrix[i]),
+                third_line,
+                None,
+                Some('*'),
+            ))
+        }
+        gears.append(get_gears(&matrix[i], numbers).as_mut());
     }
 
     gears

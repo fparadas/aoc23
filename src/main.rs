@@ -6,7 +6,7 @@ use std::io;
 
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
-struct CLI {
+struct Cli {
     /// The day to run
     #[clap(short, long)]
     day: u8,
@@ -16,7 +16,7 @@ struct CLI {
 }
 
 fn main() -> io::Result<()> {
-    let cli = CLI::parse();
+    let cli = Cli::parse();
 
     match cli.day {
         1 => days::day_one::run(cli.part.unwrap_or(1))?,

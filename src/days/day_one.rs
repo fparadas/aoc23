@@ -10,13 +10,12 @@ pub fn run(part: u8) -> io::Result<()> {
                 let numbers: Vec<u32> = line?
                     .chars()
                     .filter(|c| c.is_ascii_digit())
-                    .map(|c| (c as u8 - '0' as u8) as u32)
+                    .map(|c| c as u32 - '0' as u32)
                     .collect();
 
                 total += match (numbers.first(), numbers.last()) {
                     (Some(first), Some(last)) => first * 10 + last,
                     _ => {
-                        0;
                         break;
                     }
                 }
@@ -61,7 +60,7 @@ fn parse(input: &str) -> Result<Vec<u32>, ()> {
 
     for c in input.chars() {
         if c.is_ascii_digit() {
-            numbers.push((c as u8 - '0' as u8) as u32);
+            numbers.push(c as u32 - '0' as u32);
             if !current_word.is_empty() {
                 if let Some(&(_, number)) = number_words
                     .iter()
