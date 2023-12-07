@@ -22,7 +22,7 @@ fn parse(line: &str) -> Result<Game, &str> {
 
     let mut splitted = line.split(':');
     let id = splitted
-        .nth(0)
+        .next()
         .unwrap()
         .split_whitespace()
         .nth(1)
@@ -31,7 +31,7 @@ fn parse(line: &str) -> Result<Game, &str> {
         .unwrap();
 
     let colors = splitted
-        .nth(0)
+        .next()
         .unwrap()
         .split(';')
         .map(|input| {

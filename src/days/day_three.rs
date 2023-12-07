@@ -11,12 +11,38 @@ type Line = Vec<Token>;
 type Matrix = Vec<Line>;
 
 fn is_ascii_symbol(c: char) -> bool {
-    match c {
-        '+' | '-' | '*' | '/' | '=' | '>' | '<' | '!' | '&' | '|' | '^' | '~' | '%' | '@' | '$'
-        | '#' | '?' | ':' | ';' | ',' | '[' | ']' | '{' | '}' | '(' | ')' | '`' | '\'' | '"'
-        | '\\' => true,
-        _ => false,
-    }
+    matches!(
+        c,
+        '+' | '-'
+            | '*'
+            | '/'
+            | '='
+            | '>'
+            | '<'
+            | '!'
+            | '&'
+            | '|'
+            | '^'
+            | '~'
+            | '%'
+            | '@'
+            | '$'
+            | '#'
+            | '?'
+            | ':'
+            | ';'
+            | ','
+            | '['
+            | ']'
+            | '{'
+            | '}'
+            | '('
+            | ')'
+            | '`'
+            | '\''
+            | '"'
+            | '\\'
+    )
 }
 
 fn cathegorize(c: char) -> Token {
@@ -40,25 +66,29 @@ fn parse(line: &str) -> Result<Line, &str> {
 }
 
 fn shift_sum(a: u32, b: u8) -> u32 {
-    a*10 + b as u32
+    a * 10 + b as u32
 }
 
-fn has_symbol(line: &Line) -> bool {
-    line.iter().filter(|el| {
-        match el {
+fn has_symbol(line: &Line, symbol: Option<char>) -> bool {
+    line.iter()
+        .filter(|el| match el {
+            Token::Symbol(c) if symbol.is_some() => *c == symbol.unwrap(),
             Token::Symbol(_) => true,
             _ => false,
-        }
-    }).count() > 0
+        })
+        .count()
+        > 0
 }
 
-fn is_near_symbol(first: Option<&Line>, second: &Line, third: Option<&Line>, index: usize) -> bool {
+fn is_near_symbol(
+    first: Option<&Line>,
+    second: &Line,
+    third: Option<&Line>,
+    index: usize,
+    symbol: Option<char>,
+) -> bool {
     let mut near_symbol: bool = false;
-    let start = if index == 0 {
-        0
-    } else {
-        index - 1
-    };
+    let start = if index == 0 { 0 } else { index - 1 };
     let end = if index + 1 == second.len() {
         index
     } else if index + 2 == second.len() {
@@ -67,17 +97,17 @@ fn is_near_symbol(first: Option<&Line>, second: &Line, third: Option<&Line>, ind
         index + 2
     };
     if let Some(first_line) = first {
-        if has_symbol(&first_line[start..end].to_vec()) {
+        if has_symbol(&first_line[start..end].to_vec(), symbol) {
             near_symbol = true;
             return near_symbol;
         }
     }
-    if has_symbol(&second[start..end].to_vec()) {
+    if has_symbol(&second[start..end].to_vec(), symbol) {
         near_symbol = true;
         return near_symbol;
     }
     if let Some(third_line) = third {
-         if has_symbol(&third_line[start..end].to_vec()) {
+        if has_symbol(&third_line[start..end].to_vec(), symbol) {
             near_symbol = true;
             return near_symbol;
         }
@@ -85,61 +115,108 @@ fn is_near_symbol(first: Option<&Line>, second: &Line, third: Option<&Line>, ind
     near_symbol
 }
 
-fn get_marked_numbers(first: Option<&Line>, second: &Line, third: Option<&Line>) -> Vec<u32> {
-    let mut numbers: Vec<u32> = Vec::new();
+fn get_marked_numbers(
+    first: Option<&Line>,
+    second: &Line,
+    third: Option<&Line>,
+    symbol: Option<char>,
+) -> Vec<(u32, Vec<usize>)> {
+    let mut numbers: Vec<(u32, Vec<usize>)> = Vec::new();
     let mut current_number: u32 = 0;
     let mut near_symbol: bool = false;
+    let mut range: Vec<usize> = Vec::new();
 
     for (i, el) in second.iter().enumerate() {
         match el {
             Token::NumberDigit(d) => {
                 current_number = shift_sum(current_number, *d);
-                near_symbol = near_symbol || is_near_symbol(first, second, third, i);
+                range.push(i);
+                near_symbol = near_symbol || is_near_symbol(first, second, third, i, symbol);
             }
             _ => {
                 if current_number != 0 {
                     if near_symbol {
-                        numbers.push(current_number);
+                        numbers.push((current_number, range.clone()));
                     }
                     current_number = 0;
                     near_symbol = false;
+                    range = Vec::new();
                 }
-            },
-        }
-        if i == second.len() - 1 {
-            if current_number != 0 {
-                if near_symbol {
-                    numbers.push(current_number);
-                }
-                current_number = 0;
-                near_symbol = false;
             }
+        }
+        if i == second.len() - 1 && current_number != 0 {
+            if near_symbol {
+                numbers.push((current_number, range.clone()));
+            }
+            current_number = 0;
+            near_symbol = false;
+            range = Vec::new();
         }
     }
 
     numbers
 }
 
-fn process_marked_numbers(matrix: &Matrix) -> Vec<u32> { 
+fn process_marked_numbers(matrix: &Matrix) -> Vec<u32> {
     let mut marked_numbers: Vec<Vec<u32>> = Vec::new();
 
     for (i, _) in matrix.iter().enumerate() {
-        let first = if i == 0 {
-            None
-        } else {
-            Some(&matrix[i - 1])
-        };
+        let first = if i == 0 { None } else { Some(&matrix[i - 1]) };
         let third = if i == matrix.len() - 1 {
             None
         } else {
             Some(&matrix[i + 1])
         };
-
-        marked_numbers.push(get_marked_numbers(first, &matrix[i], third));
+        let numbers = get_marked_numbers(first, &matrix[i], third, None)
+            .iter()
+            .map(|el| el.0)
+            .collect();
+        marked_numbers.push(numbers);
     }
 
-    marked_numbers.iter().flatten().map(|el| *el).collect()
+    marked_numbers.iter().flatten().copied().collect()
 }
+
+// fn get_gears(first: Option<&Line>, second: &Line, third: Option<&Line>) -> Vec<u32> {
+//     let numbers = get_marked_numbers(first, second, third, Some('*'));
+//     let mut gears: Vec<u32> = Vec::new();
+//     for (i, el) in second.iter().enumerate() {
+//         match el {
+//             Token::Symbol(c) => {
+//                 if *c == '*' {
+//                     let (near_digit, columns) = is_near_digit(first, second, third, i);
+//                     if near_digit {
+//                         gears.push(get_numbers(first, second, third, i, &columns).iter().product())
+//                     }
+//                 }
+//             }
+//             _ => {}
+//         }
+//     }
+
+//     gears
+// }
+
+// fn process_symbols(matrix: &Matrix) -> Vec<u32> {
+//     let mut gears: Vec<u32> = Vec::new();
+
+//     for (i, _) in matrix.iter().enumerate() {
+//         let first = if i == 0 {
+//             None
+//         } else {
+//             Some(&matrix[i - 1])
+//         };
+//         let third = if i == matrix.len() - 1 {
+//             None
+//         } else {
+//             Some(&matrix[i + 1])
+//         };
+
+//         gears.push(get_gears(first, &matrix[i], third));
+//     }
+
+//     gears
+// }
 
 pub fn run(part: u8) -> io::Result<()> {
     let stdin = io::stdin();
@@ -156,7 +233,6 @@ pub fn run(part: u8) -> io::Result<()> {
             }
         })
         .collect();
-
 
     let marked_numbers = process_marked_numbers(&source);
 
